@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>點陣字生成器 (可自訂大小)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      font-family: monospace;
+      white-space: pre;
+    }
+    label, select, input {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>點陣字生成器 - 可自訂矩陣大小 (極限壓縮)</h2>
+  <label for="inputText">輸入文字：</label>
+  <input type="text" id="inputText" value="床前明月光疑是地上霜">
+
+  <label for="sizeSelect">點陣大小：</label>
+  <select id="sizeSelect">
+    <option value="16">16x16</option>
+    <option value="24">24x24</option>
+    <option value="32" selected>32x32</option>
+    <option value="64">64x64</option>
+  </select>
+
+  <button onclick="generateMatrix()">生成</button>
+
+  <h3>結果：(ctrl+a全選以下內容，複製貼上到記事本，匯入到Scratch清單)</h3>
+  <textarea id="output" readonly></textarea>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    function runLengthEncode(line) {
+      let encoded = '';
+      let count = 1;
+      for (let i = 1; i <= line.length; i++) {
+        if (line[i] === line[i - 1]) {
+          count++;
+        } else {
+          while (count > 0) {
+            let chunk = Math.min(count, 26);
+            let char = String.fromCharCode(96 + chunk); // a=1, b=2,... z=26
+            // 若為0則省略，只保留數量代碼
+            if (line[i - 1] === '1') {
+              encoded += '1' + char;
+            } else {
+              encoded += char; // 僅記錄0的長度，省略0本體
+            }
+            count -= chunk;
+          }
+          count = 1;
+        }
+      }
+      return encoded;
+    }
+
+    function generateMatrix() {
+      const text = document.getElementById('inputText').value;
+      const size = parseInt(document.getElementById('sizeSelect').value);
+      const output = document.getElementById('output');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = size;
+      canvas.height = size;
+
+      let result = "";
+      for (const char of text) {
+        ctx.clearRect(0, 0, size, size);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, size, size);
+
+        ctx.fillStyle = "black";
+        ctx.font = `${size - 4}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(char, size / 2, size / 2);
+
+        const imageData = ctx.getImageData(0, 0, size, size).data;
+        let line = "";
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const index = (y * size + x) * 4;
+            const r = imageData[index];
+            const g = imageData[index + 1];
+            const b = imageData[index + 2];
+            const avg = (r + g + b) / 3;
+            line += avg < 128 ? "1" : "0";
+          }
+        }
+        result += runLengthEncode(line) + "\n";
+      }
+      output.value = result;
+    }
+  </script>
+</body>
+</html>
