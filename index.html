@@ -22,7 +22,7 @@
 <body>
   <h2>點陣字生成器 - 可自訂矩陣大小 (極限壓縮)</h2>
   <label for="inputText">輸入文字：</label>
-  <input type="text" id="inputText" value="55">
+  <input type="text" id="inputText" value="1">
 
   <label for="sizeSelect">點陣大小：</label>
   <select id="sizeSelect">
@@ -36,6 +36,9 @@
 
   <h3>結果：</h3>
   <textarea id="output" readonly></textarea>
+
+  <h3>對應 0/1 點陣：</h3>
+  <textarea id="binaryOutput" readonly></textarea>
 
   <h3>還原 Run-Length 字串：</h3>
   <label for="decodeSize">點陣高度：</label>
@@ -53,9 +56,15 @@
   <h3>還原結果（0/1 點陣）：</h3>
   <textarea id="decodedOutput" readonly></textarea>
 
+  <h3>手動輸入 0/1 點陣轉壓縮：</h3>
+  <label for="manualInput">輸入 0/1 點陣：</label>
+  <textarea id="manualInput"></textarea>
+  <button onclick="encodeManualInput()">壓縮</button>
+  <textarea id="manualOutput" readonly></textarea>
+
   <h3>判斷全形或半形：</h3>
   <label for="typeCheckInput">輸入文字：</label>
-  <input type="text" id="typeCheckInput" value="我A1">
+  <input type="text" id="typeCheckInput" value="中文A123">
   <button onclick="checkCharacterTypes()">判斷</button>
   <textarea id="typeCheckResult" readonly></textarea>
 
@@ -114,6 +123,14 @@
       output.value = matrix;
     }
 
+    function encodeManualInput() {
+      const input = document.getElementById("manualInput").value.trim();
+      const lines = input.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const joined = lines.join("");
+      const result = runLengthEncode(joined);
+      document.getElementById("manualOutput").value = result;
+    }
+
     function isFullWidth(char) {
       return char.charCodeAt(0) > 255;
     }
@@ -122,10 +139,13 @@
       const text = document.getElementById('inputText').value;
       const baseSize = parseInt(document.getElementById('sizeSelect').value);
       const output = document.getElementById('output');
+      const binaryOutput = document.getElementById('binaryOutput');
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
 
       let result = "";
+      let binaryBlock = "";
+
       for (const char of text) {
         const isFull = isFullWidth(char);
         const width = isFull ? baseSize : Math.floor(baseSize / 2);
@@ -146,19 +166,26 @@
 
         const imageData = ctx.getImageData(0, 0, width, height).data;
         let line = "";
+        let binaryLines = [];
+
         for (let y = 0; y < height; y++) {
+          let row = "";
           for (let x = 0; x < width; x++) {
             const index = (y * width + x) * 4;
             const r = imageData[index];
             const g = imageData[index + 1];
             const b = imageData[index + 2];
             const avg = (r + g + b) / 3;
-            line += avg < 128 ? "1" : "0";
+            row += avg < 128 ? "1" : "0";
           }
+          binaryLines.push(row);
+          line += row;
         }
+        binaryBlock += binaryLines.join("\n") + "\n";
         result += runLengthEncode(line) + "\n";
       }
       output.value = result;
+      binaryOutput.value = binaryBlock;
     }
 
     function checkCharacterTypes() {
