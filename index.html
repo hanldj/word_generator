@@ -22,7 +22,7 @@
 <body>
   <h2>點陣字生成器 - 可自訂矩陣大小 (極限壓縮)</h2>
   <label for="inputText">輸入文字：</label>
-  <input type="text" id="inputText" value="1">
+  <input type="text" id="inputText" value="ABC">
 
   <label for="sizeSelect">點陣大小：</label>
   <select id="sizeSelect">
@@ -30,6 +30,12 @@
     <option value="24" selected>24x24</option>
     <option value="32">32x32</option>
     <option value="64">64x64</option>
+  </select>
+
+  <label for="direction">排列方向：</label>
+  <select id="direction">
+    <option value="horizontal">橫向</option>
+    <option value="vertical">縱向</option>
   </select>
 
   <button onclick="generateMatrix()">生成</button>
@@ -67,6 +73,12 @@
   <input type="text" id="typeCheckInput" value="中文A123">
   <button onclick="checkCharacterTypes()">判斷</button>
   <textarea id="typeCheckResult" readonly></textarea>
+
+  <h3>文字橫轉縱：</h3>
+  <label for="verticalTextInput">輸入橫向文字：</label>
+  <input type="text" id="verticalTextInput" value="ABC">
+  <button onclick="convertToVertical()">轉換</button>
+  <textarea id="verticalTextOutput" readonly></textarea>
 
   <canvas id="canvas" style="display:none;"></canvas>
 
@@ -136,7 +148,12 @@
     }
 
     function generateMatrix() {
-      const text = document.getElementById('inputText').value;
+      let text = document.getElementById('inputText').value;
+      const direction = document.getElementById('direction').value;
+      if (direction === 'vertical') {
+        text = text.split('').join('\n');
+      }
+
       const baseSize = parseInt(document.getElementById('sizeSelect').value);
       const output = document.getElementById('output');
       const binaryOutput = document.getElementById('binaryOutput');
@@ -147,6 +164,8 @@
       let binaryBlock = "";
 
       for (const char of text) {
+        if (char === '\n') continue;
+
         const isFull = isFullWidth(char);
         const width = isFull ? baseSize : Math.floor(baseSize / 2);
         const height = baseSize;
@@ -197,6 +216,12 @@
         result += '\n';
       }
       resultArea.value = result;
+    }
+
+    function convertToVertical() {
+      const input = document.getElementById("verticalTextInput").value;
+      const output = input.split('').join('\n');
+      document.getElementById("verticalTextOutput").value = output;
     }
   </script>
 </body>
